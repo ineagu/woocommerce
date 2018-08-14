@@ -1,0 +1,31 @@
+# The type of the repository
+# If auto it will scan style.css or first level .php files
+# for `Theme Name` or `Plugin Name`
+# can have one of this values
+# type: wordpress-plugin|wordpress-theme|vuejs-kit|auto
+type: wordpress-plugin
+
+# A list of paths to use
+# Eg.
+# paths:
+#   - "/home"
+#   - "/blog"
+#   - "/page1"
+paths:
+  - "blog"
+  - "category/journal"
+  - "shop"
+  - "product/76"
+  - "cart"
+  - "appearance-guide"
+
+# A list of sizes to use
+# Eg.
+# size:
+#   - 1360
+#   - 480
+size:
+  - 1366
+  - 360
+
+theme: hestia
