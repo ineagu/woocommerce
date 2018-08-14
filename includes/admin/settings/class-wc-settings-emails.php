@@ -103,13 +103,13 @@ class WC_Settings_Emails extends WC_Settings_Page {
 
 			array(
 				'title'       => __( 'Footer text', 'woocommerce' ),
-				'desc'        => __( 'The text to appear in the footer of WooCommerce emails.', 'woocommerce' )
-					 . ' ' . sprintf( __( 'Available placeholders: %s', 'woocommerce' ), '{site_title}' ),
+				'desc'        => __( 'The text to appear in the footer of WooCommerce emails.', 'woocommerce' ),
 				'id'          => 'woocommerce_email_footer_text',
 				'css'         => 'width:300px; height: 75px;',
 				'placeholder' => __( 'N/A', 'woocommerce' ),
 				'type'        => 'textarea',
-				'default'     => '{site_title}',
+				/* translators: %s: site name */
+				'default'     => get_bloginfo( 'name', 'display' ),
 				'autoload'    => false,
 				'desc_tip'    => true,
 			),

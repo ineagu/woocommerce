@@ -17,7 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * REST API Webhook Deliveries controller class.
  *
- * @deprecated 3.3.0 Webhooks deliveries logs now uses logging system.
  * @package WooCommerce/API
  * @extends WC_REST_Controller
  */
@@ -81,13 +80,13 @@ class WC_REST_Webhook_Deliveries_V1_Controller extends WC_REST_Controller {
 	}
 
 	/**
-	 * Check whether a given request has permission to read taxes.
+	 * Check whether a given request has permission to read webhook deliveries.
 	 *
 	 * @param  WP_REST_Request $request Full details about the request.
 	 * @return WP_Error|boolean
 	 */
 	public function get_items_permissions_check( $request ) {
-		if ( ! wc_rest_check_manager_permissions( 'webhooks', 'read' ) ) {
+		if ( ! wc_rest_check_post_permissions( 'shop_webhook', 'read' ) ) {
 			return new WP_Error( 'woocommerce_rest_cannot_view', __( 'Sorry, you cannot list resources.', 'woocommerce' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -95,13 +94,15 @@ class WC_REST_Webhook_Deliveries_V1_Controller extends WC_REST_Controller {
 	}
 
 	/**
-	 * Check if a given request has access to read a tax.
+	 * Check if a given request has access to read a webhook develivery.
 	 *
 	 * @param  WP_REST_Request $request Full details about the request.
 	 * @return WP_Error|boolean
 	 */
 	public function get_item_permissions_check( $request ) {
-		if ( ! wc_rest_check_manager_permissions( 'webhooks', 'read' ) ) {
+		$post = get_post( (int) $request['webhook_id'] );
+
+		if ( $post && ! wc_rest_check_post_permissions( 'shop_webhook', 'read', $post->ID ) ) {
 			return new WP_Error( 'woocommerce_rest_cannot_view', __( 'Sorry, you cannot view this resource.', 'woocommerce' ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
@@ -116,13 +117,14 @@ class WC_REST_Webhook_Deliveries_V1_Controller extends WC_REST_Controller {
 	 * @return array|WP_Error
 	 */
 	public function get_items( $request ) {
-		$webhook = wc_get_webhook( (int) $request['webhook_id'] );
+		$webhook = new WC_Webhook( (int) $request['webhook_id'] );
 
-		if ( empty( $webhook ) || is_null( $webhook ) ) {
+		if ( empty( $webhook->post_data->post_type ) || 'shop_webhook' !== $webhook->post_data->post_type ) {
 			return new WP_Error( 'woocommerce_rest_webhook_invalid_id', __( 'Invalid webhook ID.', 'woocommerce' ), array( 'status' => 404 ) );
 		}
 
-		$logs = array();
+		$logs = $webhook->get_delivery_logs();
+
 		$data = array();
 		foreach ( $logs as $log ) {
 			$delivery = $this->prepare_item_for_response( (object) $log, $request );
@@ -141,13 +143,13 @@ class WC_REST_Webhook_Deliveries_V1_Controller extends WC_REST_Controller {
 	 */
 	public function get_item( $request ) {
 		$id      = (int) $request['id'];
-		$webhook = wc_get_webhook( (int) $request['webhook_id'] );
+		$webhook = new WC_Webhook( (int) $request['webhook_id'] );
 
-		if ( empty( $webhook ) || is_null( $webhook ) ) {
+		if ( empty( $webhook->post_data->post_type ) || 'shop_webhook' !== $webhook->post_data->post_type ) {
 			return new WP_Error( 'woocommerce_rest_webhook_invalid_id', __( 'Invalid webhook ID.', 'woocommerce' ), array( 'status' => 404 ) );
 		}
 
-		$log = array();
+		$log = $webhook->get_delivery_log( $id );
 
 		if ( empty( $id ) || empty( $log ) ) {
 			return new WP_Error( 'woocommerce_rest_invalid_id', __( 'Invalid resource ID.', 'woocommerce' ), array( 'status' => 404 ) );
@@ -167,7 +169,14 @@ class WC_REST_Webhook_Deliveries_V1_Controller extends WC_REST_Controller {
 	 * @return WP_REST_Response $response Response data.
 	 */
 	public function prepare_item_for_response( $log, $request ) {
-		$data    = (array) $log;
+		$data = (array) $log;
+
+		// Add timestamp.
+		$data['date_created'] = wc_rest_prepare_date_response( $log->comment->comment_date_gmt );
+
+		// Remove comment object.
+		unset( $data['comment'] );
+
 		$context = ! empty( $request['context'] ) ? $request['context'] : 'view';
 		$data    = $this->add_additional_fields_to_object( $data, $request );
 		$data    = $this->filter_response_by_context( $data, $context );

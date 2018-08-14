@@ -2,22 +2,17 @@
 /**
  * WooCommerce API Settings
  *
- * @author   Automattic
+ * @author   WooThemes
  * @category Admin
  * @package  WooCommerce/Admin
- * @version  3.3.0
+ * @version  2.4.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit; // Exit if accessed directly
 }
 
-/**
- * Settings for API.
- */
-if ( class_exists( 'WC_Settings_Rest_API', false ) ) {
-	return new WC_Settings_Rest_API();
-}
+if ( ! class_exists( 'WC_Settings_Rest_API', false ) ) :
 
 /**
  * WC_Settings_Rest_API.
@@ -55,7 +50,7 @@ class WC_Settings_Rest_API extends WC_Settings_Page {
 	/**
 	 * Get settings array.
 	 *
-	 * @param string $current_section Current section slug.
+	 * @param string $current_section
 	 * @return array
 	 */
 	public function get_settings( $current_section = '' ) {
@@ -91,15 +86,28 @@ class WC_Settings_Rest_API extends WC_Settings_Page {
 	/**
 	 * Form method.
 	 *
-	 * @param  string $method Method name.
+	 * @param  string $method
 	 *
 	 * @return string
 	 */
 	public function form_method( $method ) {
 		global $current_section;
 
-		if ( 'keys' === $current_section ) {
-			if ( isset( $_GET['create-key'] ) || isset( $_GET['edit-key'] ) ) { // WPCS: input var okay, CSRF ok.
+		if ( 'webhooks' == $current_section ) {
+			if ( isset( $_GET['edit-webhook'] ) ) {
+				$webhook_id = absint( $_GET['edit-webhook'] );
+				$webhook    = new WC_Webhook( $webhook_id );
+
+				if ( 'trash' != $webhook->post_data->post_status ) {
+					return 'post';
+				}
+			}
+
+			return 'get';
+		}
+
+		if ( 'keys' == $current_section ) {
+			if ( isset( $_GET['create-key'] ) || isset( $_GET['edit-key'] ) ) {
 				return 'post';
 			}
 
@@ -113,10 +121,10 @@ class WC_Settings_Rest_API extends WC_Settings_Page {
 	 * Notices.
 	 */
 	private function notices() {
-		if ( isset( $_GET['section'] ) && 'webhooks' === $_GET['section'] ) { // WPCS: input var okay, CSRF ok.
+		if ( isset( $_GET['section'] ) && 'webhooks' == $_GET['section'] ) {
 			WC_Admin_Webhooks::notices();
 		}
-		if ( isset( $_GET['section'] ) && 'keys' === $_GET['section'] ) { // WPCS: input var okay, CSRF ok.
+		if ( isset( $_GET['section'] ) && 'keys' == $_GET['section'] ) {
 			WC_Admin_API_Keys::notices();
 		}
 	}
@@ -127,7 +135,7 @@ class WC_Settings_Rest_API extends WC_Settings_Page {
 	public function output() {
 		global $current_section;
 
-		if ( 'webhooks' === $current_section ) {
+		if ( 'webhooks' == $current_section ) {
 			WC_Admin_Webhooks::page_output();
 		} elseif ( 'keys' === $current_section ) {
 			WC_Admin_API_Keys::page_output();
@@ -143,11 +151,13 @@ class WC_Settings_Rest_API extends WC_Settings_Page {
 	public function save() {
 		global $current_section;
 
-		if ( apply_filters( 'woocommerce_rest_api_valid_to_save', ! in_array( $current_section, array( 'keys', 'webhooks' ), true ) ) ) {
+		if ( apply_filters( 'woocommerce_rest_api_valid_to_save', ! in_array( $current_section, array( 'keys', 'webhooks' ) ) ) ) {
 			$settings = $this->get_settings();
 			WC_Admin_Settings::save_fields( $settings );
 		}
 	}
 }
+
+endif;
 
 return new WC_Settings_Rest_API();

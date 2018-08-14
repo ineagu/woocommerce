@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @author   WooThemes
  * @category Widgets
  * @package  WooCommerce/Widgets
- * @version  3.3.0
+ * @version  2.3.0
  * @extends  WC_Widget
  */
 class WC_Widget_Products extends WC_Widget {
@@ -189,19 +189,14 @@ class WC_Widget_Products extends WC_Widget {
 		if ( ( $products = $this->get_products( $args, $instance ) ) && $products->have_posts() ) {
 			$this->widget_start( $args, $instance );
 
-			echo wp_kses_post( apply_filters( 'woocommerce_before_widget_product_list', '<ul class="product_list_widget">' ) );
-
-			$template_args = array(
-				'widget_id'   => $args['widget_id'],
-				'show_rating' => true,
-			);
+			echo apply_filters( 'woocommerce_before_widget_product_list', '<ul class="product_list_widget">' );
 
 			while ( $products->have_posts() ) {
 				$products->the_post();
-				wc_get_template( 'content-widget-product.php', $template_args );
+				wc_get_template( 'content-widget-product.php', array( 'show_rating' => false ) );
 			}
 
-			echo wp_kses_post( apply_filters( 'woocommerce_after_widget_product_list', '</ul>' ) );
+			echo apply_filters( 'woocommerce_after_widget_product_list', '</ul>' );
 
 			$this->widget_end( $args );
 		}

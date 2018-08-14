@@ -11,7 +11,6 @@ jQuery( function( $ ) {
 	var wc_checkout_form = {
 		updateTimer: false,
 		dirtyInput: false,
-		selectedPaymentMethod: false,
 		xhr: false,
 		$order_review: $( '#order_review' ),
 		$checkout_form: $( 'form.checkout' ),
@@ -33,7 +32,7 @@ jQuery( function( $ ) {
 			this.$checkout_form.on( 'submit', this.submit );
 
 			// Inline validation
-			this.$checkout_form.on( 'input validate change', '.input-text, select, input:checkbox', this.validate_field );
+			this.$checkout_form.on( 'input blur change', '.input-text, select, input:checkbox', this.validate_field );
 
 			// Manual trigger
 			this.$checkout_form.on( 'update', this.trigger_update_checkout );
@@ -59,7 +58,7 @@ jQuery( function( $ ) {
 				$( 'input#createaccount' ).change( this.toggle_create_account ).change();
 			}
 		},
-		init_payment_methods: function() {
+		init_payment_methods: function( selectedPaymentMethod ) {
 			var $payment_methods = $( '.woocommerce-checkout' ).find( 'input[name="payment_method"]' );
 
 			// If there is one method, we can hide the radio input
@@ -68,8 +67,8 @@ jQuery( function( $ ) {
 			}
 
 			// If there was a previously selected method, check that one.
-			if ( wc_checkout_form.selectedPaymentMethod ) {
-				$( '#' + wc_checkout_form.selectedPaymentMethod ).prop( 'checked', true );
+			if ( selectedPaymentMethod ) {
+				$( '#' + selectedPaymentMethod ).prop( 'checked', true );
 			}
 
 			// If there are none selected, select the first.
@@ -99,18 +98,10 @@ jQuery( function( $ ) {
 			}
 
 			if ( $( this ).data( 'order_button_text' ) ) {
-				$( '#place_order' ).text( $( this ).data( 'order_button_text' ) );
+				$( '#place_order' ).val( $( this ).data( 'order_button_text' ) );
 			} else {
-				$( '#place_order' ).text( $( '#place_order' ).data( 'value' ) );
+				$( '#place_order' ).val( $( '#place_order' ).data( 'value' ) );
 			}
-
-			var selectedPaymentMethod = $( '.woocommerce-checkout input[name="payment_method"]:checked' ).attr( 'id' );
-
-			if ( selectedPaymentMethod !== wc_checkout_form.selectedPaymentMethod ) {
-				$( document.body ).trigger( 'payment_method_selected' );
-			}
-
-			wc_checkout_form.selectedPaymentMethod = selectedPaymentMethod;
 		},
 		toggle_create_account: function() {
 			$( 'div.create-account' ).hide();
@@ -198,7 +189,7 @@ jQuery( function( $ ) {
 				$parent.removeClass( 'woocommerce-invalid woocommerce-invalid-required-field woocommerce-invalid-email woocommerce-validated' );
 			}
 
-			if ( 'validate' === event_type || 'change' === event_type ) {
+			if ( 'focusout' === event_type || 'change' === event_type ) {
 
 				if ( validate_required ) {
 					if ( 'checkbox' === $this.attr( 'type' ) && ! $this.is( ':checked' ) ) {
@@ -320,6 +311,8 @@ jQuery( function( $ ) {
 				data:		data,
 				success:	function( data ) {
 
+					var selectedPaymentMethod = $( '.woocommerce-checkout input[name="payment_method"]:checked' ).attr( 'id' );
+
 					// Reload the page if requested
 					if ( true === data.reload ) {
 						window.location.reload();
@@ -389,13 +382,17 @@ jQuery( function( $ ) {
 						}
 
 						// Lose focus for all fields
-						$form.find( '.input-text, select, input:checkbox' ).trigger( 'validate' ).blur();
+						$form.find( '.input-text, select, input:checkbox' ).blur();
 
-						wc_checkout_form.scroll_to_notices();
+						// Scroll to top
+						$( 'html, body' ).animate( {
+							scrollTop: ( $( 'form.checkout' ).offset().top - 100 )
+						}, 1000 );
+
 					}
 
 					// Re-init methods
-					wc_checkout_form.init_payment_methods();
+					wc_checkout_form.init_payment_methods( selectedPaymentMethod );
 
 					// Fire updated_checkout event.
 					$( document.body ).trigger( 'updated_checkout', [ data ] );
@@ -507,29 +504,11 @@ jQuery( function( $ ) {
 			$( '.woocommerce-NoticeGroup-checkout, .woocommerce-error, .woocommerce-message' ).remove();
 			wc_checkout_form.$checkout_form.prepend( '<div class="woocommerce-NoticeGroup woocommerce-NoticeGroup-checkout">' + error_message + '</div>' );
 			wc_checkout_form.$checkout_form.removeClass( 'processing' ).unblock();
-			wc_checkout_form.$checkout_form.find( '.input-text, select, input:checkbox' ).trigger( 'validate' ).blur();
-			wc_checkout_form.scroll_to_notices();
+			wc_checkout_form.$checkout_form.find( '.input-text, select, input:checkbox' ).blur();
+			$( 'html, body' ).animate({
+				scrollTop: ( $( 'form.checkout' ).offset().top - 100 )
+			}, 1000 );
 			$( document.body ).trigger( 'checkout_error' );
-		},
-		scroll_to_notices: function() {
-			var scrollElement           = $( '.woocommerce-NoticeGroup-updateOrderReview, .woocommerce-NoticeGroup-checkout' ),
-				isSmoothScrollSupported = 'scrollBehavior' in document.documentElement.style;
-
-			if ( ! scrollElement.length ) {
-				scrollElement = $( '.form.checkout' );
-			}
-
-			if ( scrollElement.length ) {
-				if ( isSmoothScrollSupported ) {
-					scrollElement[0].scrollIntoView({
-						behavior: 'smooth'
-					});
-				} else {
-					$( 'html, body' ).animate( {
-						scrollTop: ( scrollElement.offset().top - 100 )
-					}, 1000 );
-				}
-			}
 		}
 	};
 

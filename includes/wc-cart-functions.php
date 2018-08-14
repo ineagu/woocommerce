@@ -298,16 +298,15 @@ function wc_cart_totals_coupon_html( $coupon ) {
 function wc_cart_totals_order_total_html() {
 	$value = '<strong>' . WC()->cart->get_total() . '</strong> ';
 
-	// If prices are tax inclusive, show taxes here.
-	if ( wc_tax_enabled() && WC()->cart->display_prices_including_tax() ) {
+	// If prices are tax inclusive, show taxes here
+	if ( wc_tax_enabled() && WC()->cart->tax_display_cart == 'incl' ) {
 		$tax_string_array = array();
-		$cart_tax_totals  = WC()->cart->get_tax_totals();
 
 		if ( get_option( 'woocommerce_tax_total_display' ) == 'itemized' ) {
-			foreach ( $cart_tax_totals as $code => $tax ) {
+			foreach ( WC()->cart->get_tax_totals() as $code => $tax ) {
 				$tax_string_array[] = sprintf( '%s %s', $tax->formatted_amount, $tax->label );
 			}
-		} elseif ( ! empty( $cart_tax_totals ) ) {
+		} else {
 			$tax_string_array[] = sprintf( '%s %s', wc_price( WC()->cart->get_taxes_total( true, true ) ), WC()->countries->tax_or_vat() );
 		}
 
@@ -329,7 +328,7 @@ function wc_cart_totals_order_total_html() {
  * @param object $fee
  */
 function wc_cart_totals_fee_html( $fee ) {
-	$cart_totals_fee_html = WC()->cart->display_prices_including_tax() ? wc_price( $fee->total + $fee->tax ) : wc_price( $fee->total );
+	$cart_totals_fee_html = ( 'excl' == WC()->cart->tax_display_cart ) ? wc_price( $fee->total ) : wc_price( $fee->total + $fee->tax );
 
 	echo apply_filters( 'woocommerce_cart_totals_fee_html', $cart_totals_fee_html, $fee );
 }
@@ -343,15 +342,15 @@ function wc_cart_totals_shipping_method_label( $method ) {
 	$label = $method->get_label();
 
 	if ( $method->cost > 0 ) {
-		if ( WC()->cart->display_prices_including_tax() ) {
-			$label .= ': ' . wc_price( $method->cost + $method->get_shipping_tax() );
-			if ( $method->get_shipping_tax() > 0 && ! wc_prices_include_tax() ) {
-				$label .= ' <small class="tax_label">' . WC()->countries->inc_tax_or_vat() . '</small>';
-			}
-		} else {
+		if ( WC()->cart->tax_display_cart == 'excl' ) {
 			$label .= ': ' . wc_price( $method->cost );
 			if ( $method->get_shipping_tax() > 0 && wc_prices_include_tax() ) {
 				$label .= ' <small class="tax_label">' . WC()->countries->ex_tax_or_vat() . '</small>';
+			}
+		} else {
+			$label .= ': ' . wc_price( $method->cost + $method->get_shipping_tax() );
+			if ( $method->get_shipping_tax() > 0 && ! wc_prices_include_tax() ) {
+				$label .= ' <small class="tax_label">' . WC()->countries->inc_tax_or_vat() . '</small>';
 			}
 		}
 	}
@@ -362,23 +361,32 @@ function wc_cart_totals_shipping_method_label( $method ) {
 /**
  * Round discount.
  *
- * @param  double $value Amount to round.
- * @param  int    $precision DP to round.
+ * @param  float $value
+ * @param  int $precision
  * @return float
  */
 function wc_cart_round_discount( $value, $precision ) {
 	if ( version_compare( PHP_VERSION, '5.3.0', '>=' ) ) {
 		return round( $value, $precision, WC_DISCOUNT_ROUNDING_MODE );
-	} elseif ( 2 === WC_DISCOUNT_ROUNDING_MODE ) {
-		return wc_legacy_round_half_down( $value, $precision );
 	} else {
-		return round( $value, $precision );
+		// Fake it in PHP 5.2.
+		if ( 2 === WC_DISCOUNT_ROUNDING_MODE && strstr( $value, '.' ) ) {
+			$value    = (string) $value;
+			$value    = explode( '.', $value );
+			$value[1] = substr( $value[1], 0, $precision + 1 );
+			$value    = implode( '.', $value );
+
+			if ( substr( $value, -1 ) === '5' ) {
+				$value = substr( $value, 0, -1 ) . '4';
+			}
+			$value = floatval( $value );
+		}
+    	return round( $value, $precision );
 	}
 }
 
 /**
  * Gets chosen shipping method IDs from chosen_shipping_methods session, without instance IDs.
- *
  * @since  2.6.2
  * @return string[]
  */
@@ -434,7 +442,7 @@ function wc_get_chosen_shipping_method_for_package( $key, $package ) {
  * @since  3.2.0
  * @param  int    $key Key of package.
  * @param  array  $package Package data array.
- * @param  string $chosen_method Chosen method id.
+ * @param  string $chosen_method Cgosen method id.
  * @return string
  */
 function wc_get_default_shipping_method_for_package( $key, $package, $chosen_method ) {

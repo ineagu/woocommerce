@@ -149,7 +149,6 @@ class WC_Email_Customer_Refunded_Order extends WC_Email {
 	 * @param int $refund_id
 	 */
 	public function trigger( $order_id, $partial_refund = false, $refund_id = null ) {
-		$this->setup_locale();
 		$this->partial_refund = $partial_refund;
 		$this->id             = $this->partial_refund ? 'customer_partially_refunded_order' : 'customer_refunded_order';
 
@@ -166,10 +165,12 @@ class WC_Email_Customer_Refunded_Order extends WC_Email {
 			$this->refund = false;
 		}
 
-		if ( $this->is_enabled() && $this->get_recipient() ) {
-			$this->send( $this->get_recipient(), $this->get_subject(), $this->get_content(), $this->get_headers(), $this->get_attachments() );
+		if ( ! $this->is_enabled() || ! $this->get_recipient() ) {
+			return;
 		}
 
+		$this->setup_locale();
+		$this->send( $this->get_recipient(), $this->get_subject(), $this->get_content(), $this->get_headers(), $this->get_attachments() );
 		$this->restore_locale();
 	}
 

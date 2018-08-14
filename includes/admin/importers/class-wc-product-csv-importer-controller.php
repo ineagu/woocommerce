@@ -380,22 +380,6 @@ class WC_Product_CSV_Importer_Controller {
 	}
 
 	/**
-	 * Columns to normalize.
-	 *
-	 * @param  array $columns List of columns names and keys.
-	 * @return array
-	 */
-	protected function normalize_columns_names( $columns ) {
-		$normalized = array();
-
-		foreach ( $columns as $key => $value ) {
-			$normalized[ strtolower( $key ) ] = $value;
-		}
-
-		return $normalized;
-	}
-
-	/**
 	 * Auto map column names.
 	 *
 	 * @param  array $raw_headers Raw header columns.
@@ -411,9 +395,8 @@ class WC_Product_CSV_Importer_Controller {
 		/**
 		 * @hooked wc_importer_generic_mappings - 10
 		 * @hooked wc_importer_wordpress_mappings - 10
-		 * @hooked wc_importer_default_english_mappings - 100
 		 */
-		$default_columns = $this->normalize_columns_names( apply_filters( 'woocommerce_csv_product_import_mapping_default_columns', array(
+		$default_columns = apply_filters( 'woocommerce_csv_product_import_mapping_default_columns', array(
 			__( 'ID', 'woocommerce' )                                      => 'id',
 			__( 'Type', 'woocommerce' )                                    => 'type',
 			__( 'SKU', 'woocommerce' )                                     => 'sku',
@@ -452,20 +435,26 @@ class WC_Product_CSV_Importer_Controller {
 			__( 'External URL', 'woocommerce' )                            => 'product_url',
 			__( 'Button text', 'woocommerce' )                             => 'button_text',
 			__( 'Position', 'woocommerce' )                                => 'menu_order',
-		) ) );
+		) );
 
-		$special_columns = $this->get_special_columns( $this->normalize_columns_names( apply_filters( 'woocommerce_csv_product_import_mapping_special_columns',
+		// Normalize the columns so they are case-insensitive.
+		$normalized_default_columns = array();
+		foreach ( $default_columns as $key => $val ) {
+			$normalized_default_columns[ strtolower( $key ) ] = $val;
+		}
+
+		$special_columns = $this->get_special_columns( apply_filters( 'woocommerce_csv_product_import_mapping_special_columns',
 			array(
-				__( 'Attribute %d name', 'woocommerce' )     => 'attributes:name',
-				__( 'Attribute %d value(s)', 'woocommerce' ) => 'attributes:value',
-				__( 'Attribute %d visible', 'woocommerce' )  => 'attributes:visible',
-				__( 'Attribute %d global', 'woocommerce' )   => 'attributes:taxonomy',
-				__( 'Attribute %d default', 'woocommerce' )  => 'attributes:default',
-				__( 'Download %d name', 'woocommerce' )      => 'downloads:name',
-				__( 'Download %d URL', 'woocommerce' )       => 'downloads:url',
-				__( 'Meta: %s', 'woocommerce' )              => 'meta:',
+				strtolower( __( 'Attribute %d name', 'woocommerce' ) )     => 'attributes:name',
+				strtolower( __( 'Attribute %d value(s)', 'woocommerce' ) ) => 'attributes:value',
+				strtolower( __( 'Attribute %d visible', 'woocommerce' ) )  => 'attributes:visible',
+				strtolower( __( 'Attribute %d global', 'woocommerce' ) )   => 'attributes:taxonomy',
+				strtolower( __( 'Attribute %d default', 'woocommerce' ) )  => 'attributes:default',
+				strtolower( __( 'Download %d name', 'woocommerce' ) )      => 'downloads:name',
+				strtolower( __( 'Download %d URL', 'woocommerce' ) )       => 'downloads:url',
+				strtolower( __( 'Meta: %s', 'woocommerce' ) )              => 'meta:',
 			)
-		) ) );
+		) );
 
 		$headers = array();
 		foreach ( $raw_headers as $key => $field ) {
@@ -473,8 +462,8 @@ class WC_Product_CSV_Importer_Controller {
 			$index             = $num_indexes ? $key : $field;
 			$headers[ $index ] = $field;
 
-			if ( isset( $default_columns[ $field ] ) ) {
-				$headers[ $index ] = $default_columns[ $field ];
+			if ( isset( $normalized_default_columns[ $field ] ) ) {
+				$headers[ $index ] = $normalized_default_columns[ $field ];
 			} else {
 				foreach ( $special_columns as $regex => $special_key ) {
 					if ( preg_match( $regex, $field, $matches ) ) {

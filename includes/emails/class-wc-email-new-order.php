@@ -76,8 +76,6 @@ class WC_Email_New_Order extends WC_Email {
 	 * @param WC_Order $order Order object.
 	 */
 	public function trigger( $order_id, $order = false ) {
-		$this->setup_locale();
-
 		if ( $order_id && ! is_a( $order, 'WC_Order' ) ) {
 			$order = wc_get_order( $order_id );
 		}
@@ -88,10 +86,12 @@ class WC_Email_New_Order extends WC_Email {
 			$this->placeholders['{order_number}'] = $this->object->get_order_number();
 		}
 
-		if ( $this->is_enabled() && $this->get_recipient() ) {
-			$this->send( $this->get_recipient(), $this->get_subject(), $this->get_content(), $this->get_headers(), $this->get_attachments() );
+		if ( ! $this->is_enabled() || ! $this->get_recipient() ) {
+			return;
 		}
 
+		$this->setup_locale();
+		$this->send( $this->get_recipient(), $this->get_subject(), $this->get_content(), $this->get_headers(), $this->get_attachments() );
 		$this->restore_locale();
 	}
 
