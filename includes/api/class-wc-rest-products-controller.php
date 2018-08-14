@@ -89,9 +89,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 				'callback'            => array( $this, 'get_item' ),
 				'permission_callback' => array( $this, 'get_item_permissions_check' ),
 				'args'                => array(
-					'context' => $this->get_context_param( array(
-						'default' => 'view',
-					) ),
+					'context' => $this->get_context_param( array( 'default' => 'view' ) ),
 				),
 			),
 			array(
@@ -233,7 +231,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 		}
 
 		if ( ! empty( $tax_query ) ) {
-			$args['tax_query'] = $tax_query; // WPCS: slow query ok.
+			$args['tax_query'] = $tax_query;
 		}
 
 		// Filter featured.
@@ -253,7 +251,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 				$skus[] = $request['sku'];
 			}
 
-			$args['meta_query'] = $this->add_meta_query( $args, array( // WPCS: slow query ok.
+			$args['meta_query'] = $this->add_meta_query( $args, array(
 				'key'     => '_sku',
 				'value'   => $skus,
 				'compare' => 'IN',
@@ -262,7 +260,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 
 		// Filter by tax class.
 		if ( ! empty( $request['tax_class'] ) ) {
-			$args['meta_query'] = $this->add_meta_query( $args, array( // WPCS: slow query ok.
+			$args['meta_query'] = $this->add_meta_query( $args, array(
 				'key'   => '_tax_class',
 				'value' => 'standard' !== $request['tax_class'] ? $request['tax_class'] : '',
 			) );
@@ -270,12 +268,12 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 
 		// Price filter.
 		if ( ! empty( $request['min_price'] ) || ! empty( $request['max_price'] ) ) {
-			$args['meta_query'] = $this->add_meta_query( $args, wc_get_min_max_price_meta_query( $request ) );  // WPCS: slow query ok.
+			$args['meta_query'] = $this->add_meta_query( $args, wc_get_min_max_price_meta_query( $request ) );
 		}
 
 		// Filter product in stock or out of stock.
 		if ( is_bool( $request['in_stock'] ) ) {
-			$args['meta_query'] = $this->add_meta_query( $args, array( // WPCS: slow query ok.
+			$args['meta_query'] = $this->add_meta_query( $args, array(
 				'key'   => '_stock_status',
 				'value' => true === $request['in_stock'] ? 'instock' : 'outofstock',
 			) );
@@ -487,9 +485,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 	 */
 	protected function get_attribute_options( $product_id, $attribute ) {
 		if ( isset( $attribute['is_taxonomy'] ) && $attribute['is_taxonomy'] ) {
-			return wc_get_product_terms( $product_id, $attribute['name'], array(
-				'fields' => 'names',
-			) );
+			return wc_get_product_terms( $product_id, $attribute['name'], array( 'fields' => 'names' ) );
 		} elseif ( isset( $attribute['value'] ) ) {
 			return array_map( 'trim', explode( '|', $attribute['value'] ) );
 		}
@@ -551,8 +547,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 	 * Get product data.
 	 *
 	 * @param WC_Product $product Product instance.
-	 * @param string     $context Request context.
-	 *                            Options: 'view' and 'edit'.
+	 * @param string $context 'view' or 'edit'
 	 * @return array
 	 */
 	protected function get_product_data( $product, $context = 'view' ) {
@@ -683,9 +678,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 		}
 
 		if ( 'variation' === $product->get_type() ) {
-			return new WP_Error( "woocommerce_rest_invalid_{$this->post_type}_id", __( 'To manipulate product variations you should use the /products/&lt;product_id&gt;/variations/&lt;id&gt; endpoint.', 'woocommerce' ), array(
-				'status' => 404,
-			) );
+			return new WP_Error( "woocommerce_rest_invalid_{$this->post_type}_id", __( 'To manipulate product variations you should use the /products/&lt;product_id&gt;/variations/&lt;id&gt; endpoint.', 'woocommerce' ), array( 'status' => 404 ) );
 		}
 
 		// Post title.
@@ -745,7 +738,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 
 		// Purchase Note.
 		if ( isset( $request['purchase_note'] ) ) {
-			$product->set_purchase_note( wp_kses_post( wp_unslash( $request['purchase_note'] ) ) );
+			$product->set_purchase_note( wc_clean( $request['purchase_note'] ) );
 		}
 
 		// Featured Product.
@@ -1046,9 +1039,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 	 * @return WC_Product
 	 */
 	protected function set_product_images( $product, $images ) {
-		$images = is_array( $images ) ? array_filter( $images ) : array();
-
-		if ( ! empty( $images ) ) {
+		if ( is_array( $images ) && ! empty( $images ) ) {
 			$gallery = array();
 
 			foreach ( $images as $image ) {
@@ -1069,7 +1060,6 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 				}
 
 				if ( ! wp_attachment_is_image( $attachment_id ) ) {
-					/* translators: %s: attachment id */
 					throw new WC_REST_Exception( 'woocommerce_product_invalid_image_id', sprintf( __( '#%s is an invalid image ID.', 'woocommerce' ), $attachment_id ), 400 );
 				}
 
@@ -1086,10 +1076,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 
 				// Set the image name if present.
 				if ( ! empty( $image['name'] ) ) {
-					wp_update_post( array(
-						'ID'         => $attachment_id,
-						'post_title' => $image['name'],
-					) );
+					wp_update_post( array( 'ID' => $attachment_id, 'post_title' => $image['name'] ) );
 				}
 
 				// Set the image source if present, for future reference.
@@ -1172,10 +1159,10 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 			}
 
 			$download = new WC_Product_Download();
-			$download->set_id( $file['id'] ? $file['id'] : wp_generate_uuid4() );
+			$download->set_id( $key );
 			$download->set_name( $file['name'] ? $file['name'] : wc_get_filename_from_url( $file['file'] ) );
 			$download->set_file( apply_filters( 'woocommerce_file_download_path', $file['file'], $product, $key ) );
-			$files[] = $download;
+			$files[]  = $download;
 		}
 		$product->set_downloads( $files );
 
@@ -1286,15 +1273,11 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 		$result = false;
 
 		if ( ! $object || 0 === $object->get_id() ) {
-			return new WP_Error( "woocommerce_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'woocommerce' ), array(
-				'status' => 404,
-			) );
+			return new WP_Error( "woocommerce_rest_{$this->post_type}_invalid_id", __( 'Invalid ID.', 'woocommerce' ), array( 'status' => 404 ) );
 		}
 
 		if ( 'variation' === $object->get_type() ) {
-			return new WP_Error( "woocommerce_rest_invalid_{$this->post_type}_id", __( 'To manipulate product variations you should use the /products/&lt;product_id&gt;/variations/&lt;id&gt; endpoint.', 'woocommerce' ), array(
-				'status' => 404,
-			) );
+			return new WP_Error( "woocommerce_rest_invalid_{$this->post_type}_id", __( 'To manipulate product variations you should use the /products/&lt;product_id&gt;/variations/&lt;id&gt; endpoint.', 'woocommerce' ), array( 'status' => 404 ) );
 		}
 
 		$supports_trash = EMPTY_TRASH_DAYS > 0 && is_callable( array( $object, 'get_status' ) );
@@ -1311,9 +1294,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 
 		if ( ! wc_rest_check_post_permissions( $this->post_type, 'delete', $object->get_id() ) ) {
 			/* translators: %s: post type */
-			return new WP_Error( "woocommerce_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'woocommerce' ), $this->post_type ), array(
-				'status' => rest_authorization_required_code(),
-			) );
+			return new WP_Error( "woocommerce_rest_user_cannot_delete_{$this->post_type}", sprintf( __( 'Sorry, you are not allowed to delete %s.', 'woocommerce' ), $this->post_type ), array( 'status' => rest_authorization_required_code() ) );
 		}
 
 		$request->set_param( 'context', 'edit' );
@@ -1340,18 +1321,14 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 			// If we don't support trashing for this type, error out.
 			if ( ! $supports_trash ) {
 				/* translators: %s: post type */
-				return new WP_Error( 'woocommerce_rest_trash_not_supported', sprintf( __( 'The %s does not support trashing.', 'woocommerce' ), $this->post_type ), array(
-					'status' => 501,
-				) );
+				return new WP_Error( 'woocommerce_rest_trash_not_supported', sprintf( __( 'The %s does not support trashing.', 'woocommerce' ), $this->post_type ), array( 'status' => 501 ) );
 			}
 
 			// Otherwise, only trash if we haven't already.
 			if ( is_callable( array( $object, 'get_status' ) ) ) {
 				if ( 'trash' === $object->get_status() ) {
 					/* translators: %s: post type */
-					return new WP_Error( 'woocommerce_rest_already_trashed', sprintf( __( 'The %s has already been deleted.', 'woocommerce' ), $this->post_type ), array(
-						'status' => 410,
-					) );
+					return new WP_Error( 'woocommerce_rest_already_trashed', sprintf( __( 'The %s has already been deleted.', 'woocommerce' ), $this->post_type ), array( 'status' => 410 ) );
 				}
 
 				$object->delete();
@@ -1361,9 +1338,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 
 		if ( ! $result ) {
 			/* translators: %s: post type */
-			return new WP_Error( 'woocommerce_rest_cannot_delete', sprintf( __( 'The %s cannot be deleted.', 'woocommerce' ), $this->post_type ), array(
-				'status' => 500,
-			) );
+			return new WP_Error( 'woocommerce_rest_cannot_delete', sprintf( __( 'The %s cannot be deleted.', 'woocommerce' ), $this->post_type ), array( 'status' => 500 ) );
 		}
 
 		// Delete parent product transients.
@@ -1426,7 +1401,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 					'readonly'    => true,
 				),
 				'date_created_gmt' => array(
-					'description' => __( 'The date the product was created, as GMT.', 'woocommerce' ),
+					'description' => __( "The date the product was created, as GMT.", 'woocommerce' ),
 					'type'        => 'date-time',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -1438,7 +1413,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 					'readonly'    => true,
 				),
 				'date_modified_gmt' => array(
-					'description' => __( 'The date the product was last modified, as GMT.', 'woocommerce' ),
+					'description' => __( "The date the product was last modified, as GMT.", 'woocommerce' ),
 					'type'        => 'date-time',
 					'context'     => array( 'view', 'edit' ),
 					'readonly'    => true,
@@ -1517,7 +1492,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 					'context'     => array( 'view', 'edit' ),
 				),
 				'date_on_sale_to_gmt' => array(
-					'description' => __( 'End date of sale price, as GMT.', 'woocommerce' ),
+					'description' => __( "End date of sale price, in the site's timezone.", 'woocommerce' ),
 					'type'        => 'date-time',
 					'context'     => array( 'view', 'edit' ),
 				),
@@ -1840,7 +1815,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 								'readonly'    => true,
 							),
 							'date_created_gmt' => array(
-								'description' => __( 'The date the image was created, as GMT.', 'woocommerce' ),
+								'description' => __( "The date the image was created, as GMT.", 'woocommerce' ),
 								'type'        => 'date-time',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
@@ -1852,7 +1827,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 								'readonly'    => true,
 							),
 							'date_modified_gmt' => array(
-								'description' => __( 'The date the image was last modified, as GMT.', 'woocommerce' ),
+								'description' => __( "The date the image was last modified, as GMT.", 'woocommerce' ),
 								'type'        => 'date-time',
 								'context'     => array( 'view', 'edit' ),
 								'readonly'    => true,
@@ -1919,9 +1894,6 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 								'description' => __( 'List of available term names of the attribute.', 'woocommerce' ),
 								'type'        => 'array',
 								'context'     => array( 'view', 'edit' ),
-								'items'       => array(
-									'type' => 'string',
-								),
 							),
 						),
 					),
@@ -1993,7 +1965,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 							),
 							'value' => array(
 								'description' => __( 'Meta value.', 'woocommerce' ),
-								'type'        => 'mixed',
+								'type'        => 'string',
 								'context'     => array( 'view', 'edit' ),
 							),
 						),
@@ -2034,7 +2006,7 @@ class WC_REST_Products_Controller extends WC_REST_Legacy_Products_Controller {
 			'validate_callback' => 'rest_validate_request_arg',
 		);
 		$params['sku'] = array(
-			'description'       => __( 'Limit result set to products with specific SKU(s). Use commas to separate.', 'woocommerce' ),
+			'description'       => __( 'Limit result set to products with a specific SKU.', 'woocommerce' ),
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_text_field',
 			'validate_callback' => 'rest_validate_request_arg',

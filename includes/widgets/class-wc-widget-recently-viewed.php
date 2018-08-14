@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @author   WooThemes
  * @category Widgets
  * @package  WooCommerce/Widgets
- * @version  3.3.0
+ * @version  2.3.0
  * @extends  WC_Widget
  */
 class WC_Widget_Recently_Viewed extends WC_Widget {
@@ -33,7 +33,7 @@ class WC_Widget_Recently_Viewed extends WC_Widget {
 				'type'  => 'number',
 				'step'  => 1,
 				'min'   => 1,
-				'max'   => 15,
+				'max'   => '',
 				'std'   => 10,
 				'label' => __( 'Number of products to show', 'woocommerce' ),
 			),
@@ -83,24 +83,20 @@ class WC_Widget_Recently_Viewed extends WC_Widget {
 			);
 		}
 
-		$r = new WP_Query( apply_filters( 'woocommerce_recently_viewed_products_widget_query_args', $query_args ) );
+		$r = new WP_Query( $query_args );
 
 		if ( $r->have_posts() ) {
 
 			$this->widget_start( $args, $instance );
 
-			echo wp_kses_post( apply_filters( 'woocommerce_before_widget_product_list', '<ul class="product_list_widget">' ) );
-
-			$template_args = array(
-				'widget_id' => $args['widget_id'],
-			);
+			echo apply_filters( 'woocommerce_before_widget_product_list', '<ul class="product_list_widget">' );
 
 			while ( $r->have_posts() ) {
 				$r->the_post();
-				wc_get_template( 'content-widget-product.php', $template_args );
+				wc_get_template( 'content-widget-product.php' );
 			}
 
-			echo wp_kses_post( apply_filters( 'woocommerce_after_widget_product_list', '</ul>' ) );
+			echo apply_filters( 'woocommerce_after_widget_product_list', '</ul>' );
 
 			$this->widget_end( $args );
 		}

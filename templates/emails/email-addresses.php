@@ -13,7 +13,7 @@
  * @see 	    https://docs.woocommerce.com/document/template-structure/
  * @author 		WooThemes
  * @package 	WooCommerce/Templates/Emails
- * @version     3.2.1
+ * @version     3.2.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -30,10 +30,7 @@ $text_align = is_rtl() ? 'right' : 'left';
 			<address class="address">
 				<?php echo ( $address = $order->get_formatted_billing_address() ) ? $address : __( 'N/A', 'woocommerce' ); ?>
 				<?php if ( $order->get_billing_phone() ) : ?>
-					<br/><?php echo esc_html( $order->get_billing_phone() ); ?>
-				<?php endif; ?>
-				<?php if ( $order->get_billing_email() ) : ?>
-					<p><?php echo esc_html( $order->get_billing_email() ); ?></p>
+					<p><?php echo esc_html( $order->get_billing_phone() ); ?></p>
 				<?php endif; ?>
 			</address>
 		</td>

@@ -194,6 +194,7 @@ function wc_get_attribute_taxonomy_names() {
 function wc_get_attribute_types() {
 	return (array) apply_filters( 'product_attributes_type_selector', array(
 		'select' => __( 'Select', 'woocommerce' ),
+		'text'   => __( 'Text', 'woocommerce' ),
 	) );
 }
 
@@ -207,7 +208,7 @@ function wc_get_attribute_types() {
 function wc_get_attribute_type_label( $type ) {
 	$types = wc_get_attribute_types();
 
-	return isset( $types[ $type ] ) ? $types[ $type ] : __( 'Select', 'woocommerce' );
+	return isset( $types[ $type ] ) ? $types[ $type ] : ucfirst( $type );
 }
 
 /**

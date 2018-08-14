@@ -1,25 +1,22 @@
 <?php
-/**
- * Structured data's handler and generator using JSON-LD format.
- *
- * @since   3.0.0
- * @version 3.0.0
- * @package WooCommerce/Classes
- */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+	exit; // Exit if accessed directly.
 }
 
 /**
- * WC_Structured_Data class.
+ * Structured data's handler and generator using JSON-LD format.
+ *
+ * @class   WC_Structured_Data
+ * @since   3.0.0
+ * @version 3.0.0
+ * @package WooCommerce/Classes
+ * @author  Clément Cazaud <opportus@gmail.com>
  */
 class WC_Structured_Data {
 
 	/**
-	 * Stores the structured data.
-	 *
-	 * @var array $_data Array of structured data.
+	 * @var array $_data
 	 */
 	private $_data = array();
 
@@ -131,9 +128,9 @@ class WC_Structured_Data {
 	/**
 	 * Makes sure email structured data only outputs on non-plain text versions.
 	 *
-	 * @param WP_Order $order         Order data.
-	 * @param bool     $sent_to_admin Send to admin (default: false).
-	 * @param bool     $plain_text    Plain text email (default: false).
+	 * @param WP_Order  $order         Order data.
+	 * @param bool	    $sent_to_admin Send to admin (default: false).
+	 * @param bool	    $plain_text    Plain text email (default: false).
 	 */
 	public function output_email_structured_data( $order, $sent_to_admin = false, $plain_text = false ) {
 		if ( $plain_text ) {
@@ -152,9 +149,8 @@ class WC_Structured_Data {
 	 */
 	public function output_structured_data() {
 		$types = $this->get_data_type_for_page();
-		$data  = wc_clean( $this->get_structured_data( $types ) );
 
-		if ( $data ) {
+		if ( $data = wc_clean( $this->get_structured_data( $types ) ) ) {
 			echo '<script type="application/ld+json">' . wp_json_encode( $data ) . '</script>';
 		}
 	}
@@ -217,8 +213,8 @@ class WC_Structured_Data {
 
 		if ( '' !== $product->get_price() ) {
 			if ( $product->is_type( 'variable' ) ) {
-				$prices  = $product->get_variation_prices();
-				$lowest  = reset( $prices['price'] );
+				$prices = $product->get_variation_prices();
+				$lowest = reset( $prices['price'] );
 				$highest = end( $prices['price'] );
 
 				if ( $lowest === $highest ) {
@@ -254,10 +250,11 @@ class WC_Structured_Data {
 			$markup['offers'] = array( apply_filters( 'woocommerce_structured_data_product_offer', $markup_offer, $product ) );
 		}
 
-		if ( $product->get_review_count() ) {
+		if ( $product->get_rating_count() ) {
 			$markup['aggregateRating'] = array(
 				'@type'       => 'AggregateRating',
 				'ratingValue' => $product->get_average_rating(),
+				'ratingCount' => $product->get_rating_count(),
 				'reviewCount' => $product->get_review_count(),
 			);
 		}
@@ -282,20 +279,18 @@ class WC_Structured_Data {
 			'@type' => 'Product',
 			'name'  => get_the_title( $comment->comment_post_ID ),
 		);
-
-		// Skip replies unless they have a rating.
-		$rating = get_comment_meta( $comment->comment_ID, 'rating', true );
-
-		if ( $rating ) {
-			$markup['reviewRating'] = array(
+		if ( $rating = get_comment_meta( $comment->comment_ID, 'rating', true ) ) {
+			$markup['reviewRating']  = array(
 				'@type'       => 'rating',
 				'ratingValue' => $rating,
 			);
+
+		// Skip replies unless they have a rating.
 		} elseif ( $comment->comment_parent ) {
 			return;
 		}
 
-		$markup['author'] = array(
+		$markup['author']        = array(
 			'@type' => 'Person',
 			'name'  => get_comment_author( $comment->comment_ID ),
 		);
@@ -330,7 +325,7 @@ class WC_Structured_Data {
 				),
 			);
 
-			if ( ! empty( $crumb[1] ) && count( $crumbs ) !== $key + 1 ) {
+			if ( ! empty( $crumb[1] ) && sizeof( $crumbs ) !== $key + 1 ) {
 				$markup['itemListElement'][ $key ]['item'] += array( '@id' => $crumb[1] );
 			}
 		}
@@ -362,9 +357,9 @@ class WC_Structured_Data {
 	 *
 	 * Hooked into `woocommerce_email_order_details` action hook.
 	 *
-	 * @param WP_Order $order         Order data.
-	 * @param bool     $sent_to_admin Send to admin (default: false).
-	 * @param bool     $plain_text    Plain text email (default: false).
+	 * @param WP_Order  $order         Order data.
+	 * @param bool	    $sent_to_admin Send to admin (default: false).
+	 * @param bool	    $plain_text    Plain text email (default: false).
 	 */
 	public function generate_order_data( $order, $sent_to_admin = false, $plain_text = false ) {
 		if ( $plain_text || ! is_a( $order, 'WC_Order' ) ) {
@@ -373,7 +368,7 @@ class WC_Structured_Data {
 
 		$shop_name      = get_bloginfo( 'name' );
 		$shop_url       = home_url();
-		$order_url      = $sent_to_admin ? $order->get_edit_order_url() : $order->get_view_order_url();
+		$order_url      = $sent_to_admin ? admin_url( 'post.php?post=' . absint( $order->get_id() ) . '&action=edit' ) : $order->get_view_order_url();
 		$order_statuses = array(
 			'pending'    => 'https://schema.org/OrderPaymentDue',
 			'processing' => 'https://schema.org/OrderProcessing',
@@ -394,7 +389,7 @@ class WC_Structured_Data {
 			$product_exists = is_object( $product );
 			$is_visible     = $product_exists && $product->is_visible();
 
-			$markup_offers[] = array(
+			$markup_offers[]  = array(
 				'@type'              => 'Offer',
 				'price'              => $order->get_line_subtotal( $item ),
 				'priceCurrency'      => $order->get_currency(),

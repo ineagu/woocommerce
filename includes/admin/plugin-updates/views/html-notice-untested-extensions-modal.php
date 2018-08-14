@@ -18,24 +18,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 					);
 			?></p>
 
-			<div class="plugin-details-table-container">
-				<table class="plugin-details-table" cellspacing="0">
-					<thead>
+			<table class="plugin-details-table" cellspacing="0">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Plugin', 'woocommerce' ); ?></th>
+						<th><?php esc_html_e( 'Tested up to WooCommerce version', 'woocommerce' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $plugins as $plugin ) : ?>
 						<tr>
-							<th><?php esc_html_e( 'Plugin', 'woocommerce' ); ?></th>
-							<th><?php esc_html_e( 'Tested up to WooCommerce version', 'woocommerce' ); ?></th>
+							<td><?php echo esc_html( $plugin['Name'] ); ?></td>
+							<td><?php echo esc_html( $plugin['WC tested up to'] ); ?></td>
 						</tr>
-					</thead>
-					<tbody>
-						<?php foreach ( $plugins as $plugin ) : ?>
-							<tr>
-								<td><?php echo esc_html( $plugin['Name'] ); ?></td>
-								<td><?php echo esc_html( $plugin['WC tested up to'] ); ?></td>
-							</tr>
-						<?php endforeach ?>
-					</tbody>
-				</table>
-			</div>
+					<?php endforeach ?>
+				</tbody>
+			</table>
 
 			<p><?php esc_html_e( 'As this is a major update, we strongly recommend creating a backup of your site before updating.', 'woocommerce' ); ?> <a href="https://woocommerce.com/2017/05/create-use-backups-woocommerce/" target="_blank"><?php _e( 'Learn more', 'woocommerce' ); ?></a></p>
 

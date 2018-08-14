@@ -7,7 +7,6 @@
  * @package  WooCommerce/Import
  * @version  3.1.0
  */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -16,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Include dependencies.
  */
 if ( ! class_exists( 'WC_Importer_Interface', false ) ) {
-	include_once WC_ABSPATH . 'includes/interfaces/class-wc-importer-interface.php';
+	include_once( WC_ABSPATH . 'includes/interfaces/class-wc-importer-interface.php' );
 }
 
 /**
@@ -127,15 +126,6 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	}
 
 	/**
-	 * Get importer parameters.
-	 *
-	 * @return array
-	 */
-	public function get_params() {
-		return $this->params;
-	}
-
-	/**
 	 * Get file pointer position from the last read.
 	 *
 	 * @return int
@@ -183,19 +173,11 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 			}
 
 			$product = new $classname( $id );
-		} elseif ( ! empty( $data['id'] ) ) {
+		} elseif ( isset( $data['id'] ) ) {
 			$product = wc_get_product( $id );
 
 			if ( ! $product ) {
-				return new WP_Error(
-					'woocommerce_product_csv_importer_invalid_id',
-					/* translators: %d: product ID */
-					sprintf( __( 'Invalid product ID %d.', 'woocommerce' ), $id ),
-					array(
-						'id'     => $id,
-						'status' => 401,
-					)
-				);
+				return new WP_Error( 'woocommerce_product_csv_importer_invalid_id', sprintf( __( 'Invalid product ID %d.', 'woocommerce' ), $id ), array( 'id' => $id, 'status' => 401 ) );
 			}
 		} else {
 			$product = new WC_Product_Simple( $id );
@@ -207,7 +189,6 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	/**
 	 * Process a single item and save.
 	 *
-	 * @throws Exception If item cannot be processed.
 	 * @param  array $data Raw CSV data.
 	 * @return array|WC_Error
 	 */
@@ -216,12 +197,8 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 			do_action( 'woocommerce_product_import_before_process_item', $data );
 
 			// Get product ID from SKU if created during the importation.
-			if ( empty( $data['id'] ) && ! empty( $data['sku'] ) ) {
-				$product_id = wc_get_product_id_by_sku( $data['sku'] );
-
-				if ( $product_id ) {
-					$data['id'] = $product_id;
-				}
+			if ( empty( $data['id'] ) && ! empty( $data['sku'] ) && ( $product_id = wc_get_product_id_by_sku( $data['sku'] ) ) ) {
+				$data['id'] = $product_id;
 			}
 
 			$object   = $this->get_product_object( $data );
@@ -315,7 +292,8 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	 *
 	 * @param WC_Product $product Product instance.
 	 * @param array      $data    Item data.
-	 * @throws Exception If data cannot be set.
+	 *
+	 * @throws Exception
 	 */
 	protected function set_product_data( &$product, $data ) {
 		if ( isset( $data['raw_attributes'] ) ) {
@@ -351,7 +329,7 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 					}
 
 					// Check for default attributes and set "is_variation".
-					if ( ! empty( $attribute['default'] ) && in_array( $attribute['default'], $options, true ) ) {
+					if ( ! empty( $attribute['default'] ) && in_array( $attribute['default'], $options ) ) {
 						$default_term = get_term_by( 'name', $attribute['default'], $attribute_name );
 
 						if ( $default_term && ! is_wp_error( $default_term ) ) {
@@ -361,7 +339,7 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 						}
 
 						$default_attributes[ $attribute_name ] = $default;
-						$is_variation                          = 1;
+						$is_variation = 1;
 					}
 
 					if ( ! empty( $options ) ) {
@@ -376,7 +354,7 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 					}
 				} elseif ( isset( $attribute['value'] ) ) {
 					// Check for default attributes and set "is_variation".
-					if ( ! empty( $attribute['default'] ) && in_array( $attribute['default'], $attribute['value'], true ) ) {
+					if ( ! empty( $attribute['default'] ) && in_array( $attribute['default'], $attribute['value'] ) ) {
 						$default_attributes[ sanitize_title( $attribute['name'] ) ] = $attribute['default'];
 						$is_variation = 1;
 					}
@@ -405,8 +383,9 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	 *
 	 * @param WC_Product $variation Product instance.
 	 * @param array      $data    Item data.
+	 *
 	 * @return WC_Product|WP_Error
-	 * @throws Exception If data cannot be set.
+	 * @throws Exception
 	 */
 	protected function set_variation_data( &$variation, $data ) {
 		$parent = false;
@@ -430,12 +409,8 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 			$parent_attributes = $this->get_variation_parent_attributes( $data['raw_attributes'], $parent );
 
 			foreach ( $data['raw_attributes'] as $attribute ) {
-				$attribute_id = 0;
-
 				// Get ID if is a global attribute.
-				if ( ! empty( $attribute['taxonomy'] ) ) {
-					$attribute_id = $this->get_attribute_taxonomy_id( $attribute['name'] );
-				}
+				$attribute_id = wc_attribute_taxonomy_id_by_name( $attribute['name'] );
 
 				if ( $attribute_id ) {
 					$attribute_name = wc_attribute_taxonomy_name_by_id( $attribute_id );
@@ -518,51 +493,37 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	 * @param  string $url        Attachment URL.
 	 * @param  int    $product_id Product ID.
 	 * @return int
-	 * @throws Exception If attachment cannot be loaded.
 	 */
-	public function get_attachment_id_from_url( $url, $product_id ) {
+	protected function get_attachment_id_from_url( $url, $product_id ) {
 		if ( empty( $url ) ) {
 			return 0;
 		}
 
 		$id         = 0;
-		$upload_dir = wp_upload_dir( null, false );
+		$upload_dir = wp_upload_dir();
 		$base_url   = $upload_dir['baseurl'] . '/';
 
-		// Check first if attachment is inside the WordPress uploads directory, or we're given a filename only.
-		if ( false !== strpos( $url, $base_url ) || false === strpos( $url, '://' ) ) {
-			// Search for yyyy/mm/slug.extension or slug.extension - remove the base URL.
-			$file = str_replace( $base_url, '', $url );
+		// Check first if attachment is on WordPress uploads directory.
+		if ( false !== strpos( $url, $base_url ) ) {
+			// Search for yyyy/mm/slug.extension.
 			$args = array(
 				'post_type'   => 'attachment',
 				'post_status' => 'any',
 				'fields'      => 'ids',
-				'meta_query'  => array( // @codingStandardsIgnoreLine.
-					'relation' => 'OR',
+				'meta_query'  => array(
 					array(
-						'key'     => '_wp_attached_file',
-						'value'   => '^' . $file,
-						'compare' => 'REGEXP',
-					),
-					array(
-						'key'     => '_wp_attached_file',
-						'value'   => '/' . $file,
+						'value'   => str_replace( $base_url, '', $url ),
 						'compare' => 'LIKE',
-					),
-					array(
-						'key'     => '_wc_attachment_source',
-						'value'   => '/' . $file,
-						'compare' => 'LIKE',
+						'key'     => '_wp_attached_file',
 					),
 				),
 			);
 		} else {
-			// This is an external URL, so compare to source.
 			$args = array(
 				'post_type'   => 'attachment',
 				'post_status' => 'any',
 				'fields'      => 'ids',
-				'meta_query'  => array( // @codingStandardsIgnoreLine.
+				'meta_query'  => array(
 					array(
 						'value' => $url,
 						'key'   => '_wc_attachment_source',
@@ -571,9 +532,7 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 			);
 		}
 
-		$ids = get_posts( $args ); // @codingStandardsIgnoreLine.
-
-		if ( $ids ) {
+		if ( $ids = get_posts( $args ) ) {
 			$id = current( $ids );
 		}
 
@@ -588,7 +547,6 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 			$id = wc_rest_set_uploaded_image_as_attachment( $upload, $product_id );
 
 			if ( ! wp_attachment_is_image( $id ) ) {
-				/* translators: %s: image URL */
 				throw new Exception( sprintf( __( 'Not able to attach "%s".', 'woocommerce' ), $url ), 400 );
 			}
 
@@ -597,7 +555,6 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 		}
 
 		if ( ! $id ) {
-			/* translators: %s: image URL */
 			throw new Exception( sprintf( __( 'Unable to use image "%s".', 'woocommerce' ), $url ), 400 );
 		}
 
@@ -608,25 +565,22 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	 * Get attribute taxonomy ID from the imported data.
 	 * If does not exists register a new attribute.
 	 *
-	 * @param  string $raw_name Attribute name.
+	 * @param  string $name Attribute name.
 	 * @return int
-	 * @throws Exception If taxonomy cannot be loaded.
 	 */
-	public function get_attribute_taxonomy_id( $raw_name ) {
+	protected function get_attribute_taxonomy_id( $raw_name ) {
 		global $wpdb, $wc_product_attributes;
 
 		// These are exported as labels, so convert the label to a name if possible first.
 		$attribute_labels = wp_list_pluck( wc_get_attribute_taxonomies(), 'attribute_label', 'attribute_name' );
-		$attribute_name   = array_search( $raw_name, $attribute_labels, true );
+		$attribute_name   = '';
 
-		if ( ! $attribute_name ) {
+		if ( ! $attribute_name = array_search( $raw_name, $attribute_labels ) ) {
 			$attribute_name = wc_sanitize_taxonomy_name( $raw_name );
 		}
 
-		$attribute_id = wc_attribute_taxonomy_id_by_name( $attribute_name );
-
 		// Get the ID from the name.
-		if ( $attribute_id ) {
+		if ( $attribute_id = wc_attribute_taxonomy_id_by_name( $attribute_name ) ) {
 			return $attribute_id;
 		}
 
@@ -729,7 +683,7 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	 * separators.
 	 *
 	 * @since  3.2.0
-	 * @param  string $value Value to explode.
+	 * @param  string $value
 	 * @return array
 	 */
 	protected function explode_values( $value ) {
@@ -744,30 +698,10 @@ abstract class WC_Product_Importer implements WC_Importer_Interface {
 	 * Remove formatting and trim each value.
 	 *
 	 * @since  3.2.0
-	 * @param  string $value Value to format.
+	 * @param  string $value
 	 * @return string
 	 */
 	protected function explode_values_formatter( $value ) {
 		return trim( str_replace( '::separator::', ',', $value ) );
-	}
-
-	/**
-	 * The exporter prepends a ' to fields that start with a - which causes
-	 * issues with negative numbers. This removes the ' if the input is still a valid
-	 * number after removal.
-	 *
-	 * @since 3.3.0
-	 * @param string $value A numeric string that may or may not have ' prepended.
-	 * @return string
-	 */
-	protected function unescape_negative_number( $value ) {
-		if ( 0 === strpos( $value, "'-" ) ) {
-			$unescaped = substr_replace( $value, '', 0, 1 );
-			if ( is_numeric( $unescaped ) ) {
-				return $unescaped;
-			}
-		}
-
-		return $value;
 	}
 }
